@@ -119,7 +119,7 @@ sudo rm -rf /opt/antigravity-ide /usr/local/bin/antigravity-ide /usr/share/appli
 
 ## Licença
 
-Domínio público ([The Unlicense](LICENSE)). Pode usar, copiar, modificar, fazer fork, distribuir e até vender, do jeito que quiser, sem pedir permissão e sem precisar citar a origem.
+Licença [MIT](LICENSE). Pode usar, copiar, modificar, fazer fork, distribuir e até vender, do jeito que quiser, sem pedir permissão. A única condição é citar a origem: manter o aviso de autoria e a licença junto com qualquer cópia ou versão modificada.
 
 ---
 
