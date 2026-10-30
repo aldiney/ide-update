@@ -7,7 +7,6 @@ QUARENTENA_DIAS=7
 ASSUME_SIM=0
 SENHA_OK=0
 TMP_DIR=""
-trap '[[ -z $TMP_DIR ]] || rm -rf "$TMP_DIR"' EXIT
 
 VSCODE_KEYRING=/usr/share/keyrings/microsoft.gpg
 VSCODE_SOURCES=/etc/apt/sources.list.d/vscode.sources
@@ -24,6 +23,29 @@ if [[ -t 1 ]]; then
 else
 	VERDE="" AMARELO="" VERMELHO="" NEGRITO="" NORMAL=""
 fi
+
+# Tela e trace (set -x) vão para o log; o trace fica só no arquivo, pelo fd 3.
+LOG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.log"
+LOG="$LOG_DIR/ide-update-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p "$LOG_DIR"
+exec 3>>"$LOG"
+exec > >(tee -a "$LOG") 2>&1
+TEE_PID=$!
+BASH_XTRACEFD=3
+PS4='+ linha ${LINENO}: '
+set -x
+
+ao_sair() {
+	local codigo=$?
+	[[ -z $TMP_DIR ]] || rm -rf "$TMP_DIR"
+	if (( codigo != 0 )); then
+		printf '\n%s✖ O programa parou antes de terminar. Detalhes em: %s%s\n' "$VERMELHO" "$LOG" "$NORMAL"
+	fi
+	# Espera o tee gravar o resto, senão o prompt do terminal volta antes da última linha.
+	exec >&- 2>&-
+	wait "$TEE_PID" 2>/dev/null || true
+}
+trap ao_sair EXIT
 
 info() { printf '\n%s▶ %s%s\n' "$NEGRITO" "$*" "$NORMAL"; }
 ok() { printf '%s✔ %s%s\n' "$VERDE" "$*" "$NORMAL"; }
@@ -118,7 +140,8 @@ EOF
 }
 
 vscode_instalado() {
-	dpkg-query -W -f='${db:Status-Status} ${Version}\n' code 2>/dev/null | awk '$1 == "installed" {print $2}'
+	# Sem o pacote, o dpkg-query sai com 1 e o pipefail derrubaria o script sem mensagem.
+	{ dpkg-query -W -f='${db:Status-Status} ${Version}\n' code 2>/dev/null || true; } | awk '$1 == "installed" {print $2}'
 }
 
 vscode_candidato() {
@@ -391,6 +414,7 @@ main() {
 	done
 
 	[[ -n $acao ]] || abertura
+	printf '\nRegistro desta execução: %s\n' "$LOG"
 	checar_sistema
 	if [[ -z $acao ]]; then
 		acao=$(menu)
