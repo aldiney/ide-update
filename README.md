@@ -152,6 +152,8 @@ bash ide-update.sh todos --sim    # --sim aceita versão com menos de 7 dias sem
 
 Testado no Ubuntu 26.04 (Cinnamon). Roda como usuário comum e chama `sudo` só onde precisa. Antes de começar, confere se há `apt`, instala o `curl` se faltar e testa a conexão.
 
+Cada execução grava um registro em `.log/`, ao lado do script. Sem permissão de escrita ali, ele vai para `~/.local/state/ide-update/`, e o caminho usado aparece na tela. Rodando com `sudo`, a pasta volta para o seu usuário ao gravar.
+
 ### Quarentena de 7 dias
 
 A data de publicação do VS Code vem do epoch embutido na versão do pacote (`1.143.0-1792533444`); a do Antigravity, do `Last-Modified` do tar.gz. Sem terminal interativo e sem `--sim`, o resumo aparece e a resposta é tratada como "não". Com `--sim`, o resumo aparece e a instalação segue sem perguntar.

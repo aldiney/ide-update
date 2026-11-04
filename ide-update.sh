@@ -26,10 +26,23 @@ else
 fi
 
 # Tela e trace (set -x) vão para o log; o trace fica só no arquivo, pelo fd 3.
-LOG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.log"
+pasta_de_log() {
+	local pasta
+	for pasta in "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.log" "${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}/ide-update"; do
+		if mkdir -p "$pasta" 2>/dev/null && [[ -w $pasta ]]; then
+			printf '%s' "$pasta"
+			return 0
+		fi
+	done
+	mktemp -d
+}
+LOG_DIR=$(pasta_de_log)
 LOG="$LOG_DIR/ide-update-$(date +%Y%m%d-%H%M%S).log"
-mkdir -p "$LOG_DIR"
 exec 3>>"$LOG"
+# Rodando com sudo, a pasta ficaria do root e a próxima execução sem sudo não gravaria nela.
+if [[ -n ${SUDO_USER:-} ]] && (( EUID == 0 )); then
+	chown -R "$SUDO_USER:" "$LOG_DIR" || true
+fi
 exec > >(tee -a "$LOG") 2>&1
 TEE_PID=$!
 BASH_XTRACEFD=3
