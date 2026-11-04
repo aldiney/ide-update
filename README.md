@@ -156,7 +156,7 @@ Cada execução grava um registro em `.log/`, ao lado do script. Sem permissão 
 
 ### Quarentena de 7 dias
 
-A data de publicação do VS Code vem do epoch embutido na versão do pacote (`1.143.0-1792533444`); a do Antigravity, do `Last-Modified` do tar.gz. Sem terminal interativo e sem `--sim`, o resumo aparece e a resposta é tratada como "não". Com `--sim`, o resumo aparece e a instalação segue sem perguntar.
+A data de publicação do VS Code vem do epoch embutido na versão do pacote (`1.143.0-1792533444`); a do Antigravity, da entrada da versão no changelog. O `Last-Modified` do tar.gz só serve de reserva para versão que ainda não está no changelog, porque o Google o recarimba sem mudar o arquivo (a 2.6.0, de 26/10, veio com 03/11 e conteúdo idêntico). Sem terminal interativo e sem `--sim`, o resumo aparece e a resposta é tratada como "não". Com `--sim`, o resumo aparece e a instalação segue sem perguntar.
 
 Só a versão dentro da quarentena é analisada, com estas fontes:
 

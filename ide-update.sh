@@ -14,6 +14,7 @@ VSCODE_SOURCES=/etc/apt/sources.list.d/vscode.sources
 VSCODE_UNATTENDED=/etc/apt/apt.conf.d/51unattended-upgrades-vscode
 
 AG_PAGINA='https://antigravity.google/download?os=linux'
+AG_CHANGELOG=https://antigravity.google/docs/changelog.md
 AG_DIR=/opt/antigravity-ide
 AG_LINK=/usr/local/bin/antigravity-ide
 AG_DESKTOP=/usr/share/applications/antigravity-ide.desktop
@@ -483,7 +484,7 @@ analisar_versao() {
 	if [[ $app == vscode ]]; then
 		baixar_fontes_vscode "$instalada" "$candidata"
 	else
-		baixar_fonte changelog.md https://antigravity.google/docs/changelog.md
+		baixar_fonte changelog.md "$AG_CHANGELOG"
 	fi
 	gerar_analise "$app" "$instalada" "$candidata" 2>&3 \
 		|| aviso "Não consegui analisar esta versão: as fontes vieram num formato inesperado."
@@ -656,6 +657,18 @@ ag_instalado() {
 	cat "$AG_DIR/.versao" 2>/dev/null || true
 }
 
+# Devolve em epoch a data da versão $1 na seção do IDE no changelog; vazio se ela não estiver lá.
+ag_data_changelog() {
+	local data
+	data=$(curl -fsSL --compressed --max-time 15 "$AG_CHANGELOG" 2>/dev/null | awk -v alvo="### [v$1](" '
+		/^## / { secao = ($0 == "## Antigravity IDE") }
+		secao && index($0, alvo) == 1 { achou = 1; next }
+		achou && /^[A-Z][a-z]+ [0-9]+, [0-9]+$/ { print; exit }
+		achou && /^### \[v/ { exit }
+	' || true)
+	[[ -n $data ]] && date -d "$data" +%s
+}
+
 # $1 = cabeçalhos HTTP, $2 = nome do cabeçalho
 cabecalho() {
 	tr -d '\r' <<<"$1" | awk -F': ' -v nome="$2" 'tolower($1) == nome {print $2}' | tail -n1
@@ -728,7 +741,7 @@ ag_instalar() {
 atualizar_antigravity() {
 	info "Antigravity IDE"
 	echo "Conferindo qual é a versão mais nova..."
-	local url versao atual cabecalhos publicado tamanho
+	local url versao atual cabecalhos publicado modificado tamanho
 	url=$(ag_url_atual || true)
 	[[ -n $url ]] || erro "Não achei o link de download na página do Antigravity ($AG_PAGINA). O Google pode ter mudado a página; procure uma versão nova deste programa."
 	versao=$(ag_versao_da_url "$url")
@@ -740,10 +753,16 @@ atualizar_antigravity() {
 	fi
 
 	cabecalhos=$(curl -fsSIL "$url" || true)
-	publicado=$(cabecalho "$cabecalhos" last-modified)
 	tamanho=$(cabecalho "$cabecalhos" content-length)
-	[[ -n $publicado ]] || erro "O site do Google não respondeu direito. Rode de novo daqui a alguns minutos."
-	if ! checar_quarentena antigravity "Antigravity IDE" "$atual" "$versao" "$(date -d "$publicado" +%s)"; then
+	# O Google recarimba o Last-Modified sem mudar o arquivo: a 2.6.0, de 26/10, veio com 03/11.
+	# Ele fica só de reserva para versão fora do changelog, porque nunca é anterior à publicação.
+	publicado=$(ag_data_changelog "$(versao_curta "$versao")" || true)
+	if [[ -z $publicado ]]; then
+		modificado=$(cabecalho "$cabecalhos" last-modified)
+		[[ -n $modificado ]] || erro "O site do Google não respondeu direito. Rode de novo daqui a alguns minutos."
+		publicado=$(date -d "$modificado" +%s)
+	fi
+	if ! checar_quarentena antigravity "Antigravity IDE" "$atual" "$versao" "$publicado"; then
 		echo "Nada foi alterado no Antigravity IDE."
 		return 0
 	fi
