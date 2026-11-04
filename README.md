@@ -70,10 +70,25 @@ O Terminal vai pedir uma senha. É **a mesma senha que você usa para entrar no 
 
 ### 6. Se aparecer uma pergunta sobre "versão nova"
 
-Quando uma versão saiu há menos de 7 dias, o programa avisa e pergunta se você quer instalar mesmo assim. Esperar alguns dias é uma precaução: dá tempo de alguém descobrir algum problema na versão nova.
+Quando uma versão saiu há menos de 7 dias, o programa confere o que mudou nela e mostra um resumo com uma recomendação. Esperar alguns dias é uma precaução: dá tempo de alguém descobrir algum problema na versão nova. A exceção é quando ela corrige uma falha de segurança, porque aí o risco maior é ficar na versão antiga.
 
-- Digite **s** e Enter para instalar agora.
-- Digite **n** e Enter para esperar. Nada é alterado; rode o programa de novo daqui a alguns dias.
+```
+! O VS Code 1.144.1 saiu há 2 dia(s), em 01/11/2026. Você tem a 1.144.0.
+
+  Tipo:         correção pequena (1 alteração)
+  Segurança:    nenhum alerta publicado até agora para a sua versão
+  Recomendação: pode esperar os 7 dias, a não ser que você tenha o problema descrito.
+
+  1) Ler o que mudou
+  2) Instalar agora
+  3) Esperar (nada é alterado)
+```
+
+- Digite **1** e Enter para ler um trecho do que mudou, com o link da página completa. Depois o menu volta. O trecho fica em inglês, como o fabricante publica.
+- Digite **2** e Enter para instalar agora.
+- Digite **3** e Enter para esperar. Nada é alterado; rode o programa de novo daqui a alguns dias.
+
+A decisão é sempre sua: o programa recomenda, mas nunca instala sozinho por causa do resumo.
 
 ### 7. Pronto
 
@@ -139,7 +154,36 @@ Testado no Ubuntu 26.04 (Cinnamon). Roda como usuário comum e chama `sudo` só 
 
 ### Quarentena de 7 dias
 
-A data de publicação do VS Code vem do epoch embutido na versão do pacote (`1.143.0-1792533444`); a do Antigravity, do `Last-Modified` do tar.gz. Sem terminal interativo e sem `--sim`, a resposta é tratada como "não".
+A data de publicação do VS Code vem do epoch embutido na versão do pacote (`1.143.0-1792533444`); a do Antigravity, do `Last-Modified` do tar.gz. Sem terminal interativo e sem `--sim`, o resumo aparece e a resposta é tratada como "não". Com `--sim`, o resumo aparece e a instalação segue sem perguntar.
+
+Só a versão dentro da quarentena é analisada, com estas fontes:
+
+| | VS Code | Antigravity |
+|---|---|---|
+| Segurança | `security-advisories` do GitHub: compara a faixa afetada com a versão instalada e a nova | Busca por `security`, `vulnerab*`, `CVE-` e `exploit*` no changelog |
+| Correção | `compare` do GitHub entre as duas versões (sem tag ainda, usa a branch `release/x.y` até o `Bump version`) | Seções `Fixes` e `Patches` |
+| Novidades | `vscode-docs/release-notes/v1_NNN.md` (também lê as linhas `Update x.y.z`) | Seção `Improvements` de `docs/changelog.md` |
+
+Recomendação, na ordem em que é decidida:
+
+| Situação | Recomendação |
+|---|---|
+| A própria versão nova está na faixa afetada | Não instalar |
+| Instalação nova, sem versão anterior | A escolha é do usuário |
+| Alerta que afeta a versão instalada e é corrigido na nova, ou notas que citam `security issues` | Instalar agora |
+| Changelog do Antigravity cita segurança | Ler antes de decidir |
+| Fonte fora do ar ou limite do GitHub | Esperar, dizendo que não conseguiu verificar |
+| Só correções | Pode esperar, salvo se tiver o problema descrito |
+| Só novidades | Esperar |
+
+Limites que valem conhecer:
+
+- "Nenhum alerta" não é "nenhuma falha": dos 40 alertas mais recentes do VS Code, 37 saíram no mesmo dia da versão corrigida (ou com 1 dia de diferença), 2 não informam a versão corrigida e 1 saiu 35 dias depois.
+- O Antigravity não tem lista de CVE (o NVD não traz nenhum), então lá segurança é só um indício do changelog.
+- O changelog diz o que o fabricante corrigiu, mas não prova que o pacote está íntegro. Instalar antes dos 7 dias continua sendo uma troca de risco.
+- Em salto de várias versões do VS Code, os alertas cobrem o salto inteiro, mas as notas são só da série nova.
+
+A análise usa `python3` (sem instalar nada). Sem ele, o programa mostra só o link do changelog. A API do GitHub permite 60 consultas por hora sem login, e cada análise gasta no máximo 2.
 
 ### VS Code
 
